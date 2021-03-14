@@ -1,0 +1,75 @@
+#!/usr/bin/python
+
+import sys,time
+import easysnmp
+import math
+from easysnmp import Session
+from easysnmp import snmp_get,snmp_walk
+
+
+detailed_info_agt=sys.argv[1]
+details_agt=detailed_info_agt.split(':')
+agt_ip_add=details_agt[0]
+det_agt=details_agt[1]
+comm_agt_det=details_agt[2]
+nr_fqy_spl=float(sys.argv[2])
+sampl=int(sys.argv[3])
+al_time_spl=1/nr_fqy_spl 
+oids_dkm=[]
+oid_came=[]
+last_oid=[]
+
+
+for xy in range(4,len(sys.argv)):
+	oids_dkm.append(sys.argv[xy])
+oids_dkm.insert(0,'1.3.6.1.2.1.1.3.0')
+
+
+def deepika():
+	global oid_came, came_time
+	
+	session=Session(hostname=agt_ip_add,remote_port=det_agt,community='public',version=2,timeout=1,retries=1)
+	response=session.get(oids_dkm)
+	last_oid=[]
+	
+
+	for sn in range(1,len(response)):
+		if response[sn].value!='NOSUCHOBJECT' and response[sn].value!='NOSUCHINSTANCE':
+			last_oid.append(int(response[sn].value))
+			
+			if count!=0 and len(oid_came)>0:
+				oid_gap=int(last_oid[sn-1]) - int(oid_came[sn-1])
+				time_difference=round(gone_time-came_time,1)
+				rate = int(oid_gap / time_difference)
+				if rate < 0 :
+					if response[sn].snmp_type == 'COUNTER32': 
+						oid_gap = oid_gap + 2**32
+						print(str(gone_time) +"|"+ str(oid_gap / time_difference) +"|")
+					elif response[sn].snmp_type == 'COUNTER64':
+						oid_gap = oid_gap + 2**64
+						print(str(gone_time) +"|"+ str(oid_gap / time_difference) +"|")
+				else:
+					print(str(gone_time) +"|"+ str(rate) +"|")
+
+	oid_came=last_oid
+	came_time=gone_time
+	
+
+
+if sampl==-1:
+	count=0
+	oid_came=[]
+	while True:
+		gone_time=(time.time())
+		deepika()
+		response_time=(time.time())
+		count = count+1
+		time.sleep(abs(al_time_spl - response_time + gone_time))
+else:
+	oid_came=[]
+	for count in range(0,sampl+1):
+		gone_time=(time.time())
+		deepika()
+		response_time=(time.time())
+		time.sleep(abs(al_time_spl - response_time + gone_time))
+		
